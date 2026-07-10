@@ -478,7 +478,7 @@ class EstudianteModel
             LEFT JOIN usuarios p ON p.id_usuario = e.id_padre
             LEFT JOIN asistencia a ON a.id_estudiante = e.id_estudiante
             WHERE c.id_docente = ?
-            GROUP BY e.id_estudiante, cu.id_curso
+            GROUP BY e.id_estudiante, cu.id_curso, p.id_usuario
             ORDER BY e.grado, e.seccion, e.apellidos, e.nombres
         ");
         $stmt->execute([$idDocente]);
