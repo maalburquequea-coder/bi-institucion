@@ -1,0 +1,12 @@
+Options -Indexes
+
+# Bloquear acceso directo a archivos sensibles
+<FilesMatch "^\.env(\..*)?$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "\.(json|lock|md|gitignore)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

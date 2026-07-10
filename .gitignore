@@ -1,0 +1,5 @@
+.env
+vendor/
+database_export.sql
+uploads/asistencia/*
+!uploads/asistencia/.gitkeep
