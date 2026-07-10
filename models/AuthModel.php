@@ -218,7 +218,7 @@ class AuthModel
     {
         $sql    = "SELECT fecha, 'Asistencia General' AS curso, estado FROM asistencia WHERE id_estudiante = ?";
         $params = [$idEstudiante];
-        if (!empty($filtros['mes'])) { $sql .= " AND DATE_FORMAT(fecha, '%Y-%m') = ?"; $params[] = $filtros['mes']; }
+        if (!empty($filtros['mes'])) { $sql .= " AND TO_CHAR(fecha, 'YYYY-MM') = ?"; $params[] = $filtros['mes']; }
         $sql .= " ORDER BY fecha DESC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -227,7 +227,7 @@ class AuthModel
 
     private function asistenciaMesHijo(int $idEstudiante): array
     {
-        $stmt = $this->db->prepare("SELECT DATE_FORMAT(fecha, '%Y-%m') AS mes, SUM(CASE WHEN estado IN ('Presente','Justificado','Tardanza') THEN 1 ELSE 0 END) AS asistencias, SUM(CASE WHEN estado = 'Falto' THEN 1 ELSE 0 END) AS inasistencias FROM asistencia WHERE id_estudiante = ? GROUP BY DATE_FORMAT(fecha, '%Y-%m') ORDER BY mes");
+        $stmt = $this->db->prepare("SELECT TO_CHAR(fecha, 'YYYY-MM') AS mes, SUM(CASE WHEN estado IN ('Presente','Justificado','Tardanza') THEN 1 ELSE 0 END) AS asistencias, SUM(CASE WHEN estado = 'Falto' THEN 1 ELSE 0 END) AS inasistencias FROM asistencia WHERE id_estudiante = ? GROUP BY TO_CHAR(fecha, 'YYYY-MM') ORDER BY mes");
         $stmt->execute([$idEstudiante]);
         return $stmt->fetchAll();
     }

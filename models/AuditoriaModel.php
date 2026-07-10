@@ -38,7 +38,7 @@ class AuditoriaModel
             $stmt = $this->db->prepare("
                 SELECT COUNT(*) FROM accesos_sistema
                 WHERE ip = ? AND exito = 0
-                  AND fecha >= NOW() - INTERVAL ? MINUTE
+                  AND fecha >= NOW() - (? * INTERVAL '1 minute')
             ");
             $stmt->execute([$ip, $minutos]);
             return (int) $stmt->fetchColumn();

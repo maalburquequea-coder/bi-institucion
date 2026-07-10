@@ -19,7 +19,7 @@ class AsistenciaModel
 
     public function ultimaFechaAsistencia(): string
     {
-        $fecha = $this->db->query("SELECT DATE(MAX(fecha_subida)) FROM documentos_asistencia")->fetchColumn();
+        $fecha = $this->db->query("SELECT MAX(fecha_subida)::date FROM documentos_asistencia")->fetchColumn();
         return $fecha ?: date('Y-m-d');
     }
 

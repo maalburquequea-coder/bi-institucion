@@ -3,10 +3,7 @@ set -e
 
 # Generar .env desde las variables de entorno de Render
 cat > /var/www/html/.env <<EOF
-DB_HOST=${DB_HOST}
-DB_NAME=${DB_NAME}
-DB_USER=${DB_USER}
-DB_PASS="${DB_PASS}"
+DATABASE_URL=${DATABASE_URL}
 SMTP_PASS=${SMTP_PASS}
 GEMINI_API_KEY=${GEMINI_API_KEY}
 BASE_URL=${BASE_URL}

@@ -73,6 +73,7 @@ class UsuarioModel
         $stmt = $this->db->prepare("
             INSERT INTO usuarios (dni, nombres, apellidos, correo, telefono, contrasena, id_rol, primer_login, estado_cuenta, fecha_registro)
             VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'activo', NOW())
+            RETURNING id_usuario
         ");
         $stmt->execute([
             $data['dni'], $data['nombres'], $data['apellidos'], $data['correo'],
@@ -80,7 +81,7 @@ class UsuarioModel
             password_hash($data['contrasena'], PASSWORD_DEFAULT),
             $data['id_rol'],
         ]);
-        return (int) $this->db->lastInsertId();
+        return (int) $stmt->fetchColumn();
     }
 
     public function registrarUsuarioAdmin(array $data): int
@@ -88,6 +89,7 @@ class UsuarioModel
         $stmt = $this->db->prepare("
             INSERT INTO usuarios (dni, nombres, apellidos, correo, telefono, contrasena, id_rol, primer_login, estado_cuenta, fecha_registro)
             VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, NOW())
+            RETURNING id_usuario
         ");
         $stmt->execute([
             $data['dni'], $data['nombres'], $data['apellidos'], $data['correo'],
@@ -95,7 +97,7 @@ class UsuarioModel
             password_hash($data['contrasena'], PASSWORD_DEFAULT),
             $data['id_rol'], $data['estado_cuenta'],
         ]);
-        return (int) $this->db->lastInsertId();
+        return (int) $stmt->fetchColumn();
     }
 
     public function actualizarUsuarioAdmin(array $data): bool
@@ -195,7 +197,7 @@ class UsuarioModel
             SELECT
                 (SELECT COUNT(*) FROM usuarios WHERE estado_cuenta = 'activo') AS usuarios_activos,
                 (SELECT COUNT(*) FROM notificaciones) AS alertas_generadas,
-                (SELECT COUNT(*) FROM documentos_asistencia WHERE DATE(fecha_subida) = CURDATE()) AS cargas_hoy
+                (SELECT COUNT(*) FROM documentos_asistencia WHERE fecha_subida::date = CURRENT_DATE) AS cargas_hoy
         ")->fetch() ?: [];
     }
 

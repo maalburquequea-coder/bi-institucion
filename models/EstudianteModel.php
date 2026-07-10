@@ -19,7 +19,7 @@ class EstudianteModel
                 (SELECT COUNT(*) FROM calificaciones WHERE nota_final < 11) AS notas_criticas,
                 (SELECT COUNT(*) FROM asistencia WHERE estado IN ('Falto', 'Tardanza')) AS asistencias_riesgo,
                 (SELECT COUNT(*) FROM usuarios WHERE estado_cuenta = 'activo') AS usuarios_activos,
-                (SELECT COUNT(*) FROM documentos_asistencia WHERE DATE(fecha_subida) = CURDATE()) AS cargas_hoy,
+                (SELECT COUNT(*) FROM documentos_asistencia WHERE fecha_subida::date = CURRENT_DATE) AS cargas_hoy,
                 (SELECT COUNT(*) FROM notificaciones) AS alertas_generadas
         ";
 
@@ -57,7 +57,13 @@ class EstudianteModel
             LEFT JOIN calificaciones c ON c.id_estudiante = e.id_estudiante
             LEFT JOIN asistencia a ON a.id_estudiante = e.id_estudiante
             GROUP BY e.id_estudiante, p.id_usuario
-            HAVING puntaje_riesgo > 0
+            HAVING LEAST(
+                    100,
+                    (CASE WHEN COALESCE(AVG(c.nota_final), 20) < 11 THEN 45 ELSE 0 END) +
+                    (SUM(CASE WHEN c.nota_final < 11 THEN 1 ELSE 0 END) * 15) +
+                    (SUM(CASE WHEN a.estado = 'Falto' THEN 1 ELSE 0 END) * 8) +
+                    (SUM(CASE WHEN a.estado = 'Tardanza' THEN 1 ELSE 0 END) * 4)
+                ) > 0
             ORDER BY puntaje_riesgo DESC, promedio ASC
         ";
 
@@ -529,7 +535,7 @@ class EstudianteModel
     {
         $stmt = $this->db->prepare("
             SELECT
-                YEARWEEK(a.fecha, 1) AS semana,
+                TO_CHAR(a.fecha, 'IYYY-IW') AS semana,
                 ROUND(100 * SUM(CASE WHEN a.estado IN ('Presente','Justificado','Tardanza') THEN 1 ELSE 0 END) / NULLIF(COUNT(a.id_asistencia), 0), 0) AS asistencia
             FROM asistencia a
             JOIN (
@@ -538,7 +544,7 @@ class EstudianteModel
                 JOIN cursos cu ON cu.id_curso = c.id_curso
                 WHERE c.id_docente = ?
             ) mis ON mis.id_estudiante = a.id_estudiante
-            GROUP BY YEARWEEK(a.fecha, 1)
+            GROUP BY TO_CHAR(a.fecha, 'IYYY-IW')
             ORDER BY semana
             LIMIT 8
         ");
@@ -554,7 +560,7 @@ class EstudianteModel
             SELECT nivel, grado, seccion, MAX(fecha_subida) AS ultima
             FROM documentos_asistencia
             WHERE id_docente = ?
-              AND DATE(fecha_subida) = CURDATE()
+              AND fecha_subida::date = CURRENT_DATE
             GROUP BY nivel, grado, seccion
         ");
         $stmt->execute([$idDocente]);

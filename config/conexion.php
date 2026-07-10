@@ -3,22 +3,12 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Cargar variables de entorno desde .env
 $dotenvPath = dirname(__DIR__);
 if (file_exists($dotenvPath . '/.env')) {
     $dotenv = Dotenv\Dotenv::createImmutable($dotenvPath);
     $dotenv->load();
-    $dotenv->required([
-        'DB_HOST', 'DB_NAME', 'DB_USER',
-        'SMTP_PASS', 'GEMINI_API_KEY',
-        'BASE_URL',
-    ]);
 }
 
-define('DB_HOST',        $_ENV['DB_HOST']        ?? 'localhost');
-define('DB_NAME',        $_ENV['DB_NAME']        ?? 'bi_educativo_piura');
-define('DB_USER',        $_ENV['DB_USER']        ?? 'root');
-define('DB_PASS',        $_ENV['DB_PASS']        ?? '');
 define('APP_NAME',       'BI Educativo Piura 2026');
 define('BASE_URL',       $_ENV['BASE_URL']       ?? 'http://localhost:8080/bi_institucion/');
 define('MAIL_FROM',      $_ENV['MAIL_FROM']      ?? '');
@@ -35,9 +25,25 @@ function db(): PDO
     static $conexion = null;
 
     if ($conexion === null) {
-        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
-        $conexion = new PDO($dsn, DB_USER, DB_PASS, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        // Render proporciona DATABASE_URL para PostgreSQL
+        if (!empty($_ENV['DATABASE_URL'])) {
+            $url  = parse_url($_ENV['DATABASE_URL']);
+            $host = $url['host'];
+            $port = $url['port'] ?? 5432;
+            $name = ltrim($url['path'], '/');
+            $user = $url['user'];
+            $pass = $url['pass'];
+        } else {
+            $host = $_ENV['DB_HOST'] ?? 'localhost';
+            $port = $_ENV['DB_PORT'] ?? 5432;
+            $name = $_ENV['DB_NAME'] ?? 'bi_educativo_piura';
+            $user = $_ENV['DB_USER'] ?? 'postgres';
+            $pass = $_ENV['DB_PASS'] ?? '';
+        }
+
+        $dsn = "pgsql:host={$host};port={$port};dbname={$name}";
+        $conexion = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
     }
@@ -46,4 +52,4 @@ function db(): PDO
 }
 
 require_once __DIR__ . '/../helpers/funciones.php';
-require_once __DIR__ . '/security_headers.php';
+require_once __DIR__ . '/../config/security_headers.php';

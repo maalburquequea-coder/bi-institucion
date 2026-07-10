@@ -2,8 +2,8 @@ FROM php:8.2-apache
 
 # Extensiones necesarias
 RUN apt-get update && apt-get install -y \
-        libzip-dev libonig-dev libssl-dev curl unzip \
-    && docker-php-ext-install pdo pdo_mysql zip mbstring \
+        libzip-dev libonig-dev libssl-dev curl unzip libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql zip mbstring \
     && a2enmod rewrite headers access_compat
 
 # Composer
