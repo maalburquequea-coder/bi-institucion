@@ -10,6 +10,22 @@ BASE_URL=${BASE_URL}
 APP_NAME="${APP_NAME:-BI Educativo}"
 EOF
 
+# Importar schema y datos si la BD está vacía
+if [ -n "$DATABASE_URL" ]; then
+    TABLES=$(psql "$DATABASE_URL" -t -c \
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='roles';" \
+        2>/dev/null | tr -d ' \n' || echo "0")
+    if [ "$TABLES" = "0" ] || [ -z "$TABLES" ]; then
+        echo "[entrypoint] Importando schema PostgreSQL..."
+        psql "$DATABASE_URL" -f /var/www/html/database/schema_pg.sql
+        echo "[entrypoint] Importando datos..."
+        psql "$DATABASE_URL" -f /var/www/html/database/data_pg.sql
+        echo "[entrypoint] Base de datos lista."
+    else
+        echo "[entrypoint] Schema ya existe, omitiendo importacion."
+    fi
+fi
+
 # Asegurar permisos de uploads
 chown -R www-data:www-data /var/www/html/uploads/
 chmod -R 755 /var/www/html/uploads/
