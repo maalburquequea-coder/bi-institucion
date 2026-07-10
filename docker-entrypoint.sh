@@ -10,7 +10,7 @@ DB_PASS="${DB_PASS}"
 SMTP_PASS=${SMTP_PASS}
 GEMINI_API_KEY=${GEMINI_API_KEY}
 BASE_URL=${BASE_URL}
-APP_NAME=${APP_NAME:-BI Educativo}
+APP_NAME="${APP_NAME:-BI Educativo}"
 EOF
 
 # Asegurar permisos de uploads
