@@ -22,8 +22,9 @@ RUN mkdir -p uploads/asistencia \
     && chown -R www-data:www-data uploads/ \
     && chmod -R 755 uploads/
 
-# Configurar Apache: AllowOverride para .htaccess
-RUN sed -i 's|AllowOverride None|AllowOverride All|g' /etc/apache2/apache2.conf
+# Configurar Apache: AllowOverride para .htaccess + DirectoryIndex con I mayúscula
+RUN sed -i 's|AllowOverride None|AllowOverride All|g' /etc/apache2/apache2.conf \
+    && sed -i 's|DirectoryIndex index.html|DirectoryIndex Index.php index.php index.html|g' /etc/apache2/mods-enabled/dir.conf
 
 # Script de arranque (crea .env desde variables de entorno de Render)
 COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
