@@ -100,11 +100,11 @@ $paginaActual = basename($_SERVER['PHP_SELF'] ?? 'notificaciones.php');
             <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Fecha</th><th>Origen</th><th>Destinatario</th><th>Referencia</th><th>Canal</th><th>Estado</th><th>Mensaje</th><th>WhatsApp</th></tr>
+                        <tr><th>Fecha</th><th>Origen</th><th>Destinatario</th><th>Referencia</th><th>Canal</th><th>Estado</th><th>Mensaje</th><th>WhatsApp</th><th>Correo</th></tr>
                     </thead>
                     <tbody>
                         <?php if (empty($notificaciones)): ?>
-                            <tr><td colspan="8" class="empty">No se encontraron notificaciones registradas.</td></tr>
+                            <tr><td colspan="9" class="empty">No se encontraron notificaciones registradas.</td></tr>
                         <?php endif; ?>
                         <?php foreach ($notificaciones as $n): ?>
                             <tr>
@@ -124,6 +124,19 @@ $paginaActual = basename($_SERVER['PHP_SELF'] ?? 'notificaciones.php');
                                         <a class="mini-btn" href="<?= e($urlWhatsApp) ?>" target="_blank" rel="noopener">Enviar</a>
                                     <?php else: ?>
                                         <small>Sin numero</small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if (!empty($n['correo'])): ?>
+                                        <?php
+                                            $asunto = rawurlencode('Alerta BI Educativo - ' . ($n['referencia'] ?? ''));
+                                            $cuerpo = rawurlencode($n['mensaje'] ?? '');
+                                        ?>
+                                        <a class="mini-btn" style="background:#6366f1;"
+                                           href="mailto:<?= e($n['correo']) ?>?subject=<?= $asunto ?>&body=<?= $cuerpo ?>"
+                                           target="_blank">Enviar</a>
+                                    <?php else: ?>
+                                        <small>Sin correo</small>
                                     <?php endif; ?>
                                 </td>
                             </tr>
