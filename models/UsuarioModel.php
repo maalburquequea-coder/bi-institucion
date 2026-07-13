@@ -71,8 +71,8 @@ class UsuarioModel
     public function registrarUsuario(array $data): int
     {
         $stmt = $this->db->prepare("
-            INSERT INTO usuarios (dni, nombres, apellidos, correo, telefono, contrasena, id_rol, primer_login, estado_cuenta, fecha_registro)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'activo', NOW())
+            INSERT INTO usuarios (dni, nombres, apellidos, correo, telefono, contrasena, id_rol, primer_login, estado_cuenta, correo_verificado, fecha_registro)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'activo', 1, NOW())
             RETURNING id_usuario
         ");
         $stmt->execute([

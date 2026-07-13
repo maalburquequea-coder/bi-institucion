@@ -51,9 +51,7 @@ class AuthController
             } elseif (($usuario['estado_cuenta'] ?? 'pendiente') !== 'activo') {
                 $this->auth->registrarAcceso((int) $usuario['id_usuario'], $correo, false);
                 $error = 'Tu cuenta esta ' . ($usuario['estado_cuenta'] ?? 'pendiente') . '. Pongase en contacto con soporte si cree que es un error.';
-            } elseif ((int) ($usuario['correo_verificado'] ?? 1) !== 1) {
-                $this->auth->registrarAcceso((int) $usuario['id_usuario'], $correo, false);
-                $error = 'Tu cuenta fue aprobada, pero aun debes verificar tu correo. Revisa tu bandeja de entrada o spam.';
+            } elseif (false) { // verificacion de correo desactivada
             } else {
                 // Regenerar ID de sesión para prevenir session fixation
                 session_regenerate_id(true);
