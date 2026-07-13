@@ -7,8 +7,8 @@ $pdo = db();
 $chkCal = $pdo->prepare("SELECT COUNT(*) FROM calificaciones WHERE id_estudiante = 6 AND id_curso = 5 AND id_docente = 9");
 $chkCal->execute();
 if ((int)$chkCal->fetchColumn() === 0) {
-    $pdo->prepare("INSERT INTO calificaciones (id_estudiante, id_curso, id_docente, nota, descripcion, fecha_registro) VALUES (6,5,9,11.00,'Unidad 1',NOW())")->execute();
-    $pdo->prepare("INSERT INTO calificaciones (id_estudiante, id_curso, id_docente, nota, descripcion, fecha_registro) VALUES (6,5,9,12.00,'Unidad 2',NOW())")->execute();
+    $pdo->prepare("INSERT INTO calificaciones (id_estudiante, id_curso, id_docente, nota_final, periodo, fecha_registro) VALUES (6,5,9,11.00,'Unidad 1',NOW())")->execute();
+    $pdo->prepare("INSERT INTO calificaciones (id_estudiante, id_curso, id_docente, nota_final, periodo, fecha_registro) VALUES (6,5,9,12.00,'Unidad 2',NOW())")->execute();
     echo "Notas EPT de Jesus Aymar agregadas OK.\n";
 } else {
     echo "Notas EPT de Jesus Aymar ya existen.\n";
