@@ -212,6 +212,81 @@ class AuthController
         redirigir('login.php?verificado=0');
     }
 
+    public function recuperarContrasena(): void
+    {
+        iniciarSesion();
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $error = '';
+        $ok = '';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->validarCSRF();
+            $correo = strtolower(trim((string) ($_POST['correo'] ?? '')));
+
+            if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+                $error = 'Ingresa un correo electronico valido.';
+            } else {
+                $usuario = $this->auth->buscarUsuarioPorCorreo($correo);
+                if ($usuario) {
+                    $token = bin2hex(random_bytes(32));
+                    $this->auth->guardarTokenReset((int) $usuario['id_usuario'], $token);
+                    $url   = BASE_URL . 'restablecer.php?token=' . $token;
+                    $cuerpo = "Hola {$usuario['nombres']},\n\n"
+                        . "Recibimos una solicitud para restablecer tu contrasena en BI Educativo Piura 2026.\n\n"
+                        . "Haz clic en el siguiente enlace (valido por 24 horas):\n$url\n\n"
+                        . "Si no solicitaste esto, ignora este mensaje.";
+                    EmailService::enviar($correo, 'Restablecer contrasena - BI Educativo', $cuerpo);
+                }
+                // Mismo mensaje aunque no exista el correo (por seguridad)
+                $ok = 'Si el correo existe en el sistema, recibiras un enlace para restablecer tu contrasena.';
+            }
+        }
+
+        require __DIR__ . '/../views/recuperar_v.php';
+    }
+
+    public function restablecerContrasena(): void
+    {
+        iniciarSesion();
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $error = '';
+        $ok    = '';
+        $token = trim((string) ($_GET['token'] ?? ''));
+
+        if ($token === '') {
+            redirigir('login.php');
+        }
+
+        $usuario = $this->auth->buscarUsuarioPorTokenReset($token);
+        if (!$usuario) {
+            $error = 'El enlace no es valido o ya fue usado. Solicita uno nuevo.';
+            require __DIR__ . '/../views/recuperar_v.php';
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->validarCSRF();
+            $nueva    = (string) ($_POST['contrasena']  ?? '');
+            $confirma = (string) ($_POST['confirma']    ?? '');
+
+            if (!contrasenaRobusta($nueva)) {
+                $error = 'La contrasena debe tener minimo 8 caracteres, mayuscula, minuscula, numero y simbolo.';
+            } elseif ($nueva !== $confirma) {
+                $error = 'Las contrasenas no coinciden.';
+            } else {
+                $this->auth->actualizarContrasena((int) $usuario['id_usuario'], password_hash($nueva, PASSWORD_DEFAULT));
+                $this->auth->registrarAuditoria((int) $usuario['id_usuario'], 'Cuenta', 'Reset contrasena', 'Contrasena restablecida por enlace');
+                redirigir('login.php?reset=1');
+            }
+        }
+
+        require __DIR__ . '/../views/restablecer_v.php';
+    }
+
     public function logout(): void
     {
         iniciarSesion();

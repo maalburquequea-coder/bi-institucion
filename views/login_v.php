@@ -53,6 +53,9 @@
             <?php if (!empty($ok)): ?>
                 <div class="alert ok"><?= e($ok) ?></div>
             <?php endif; ?>
+            <?php if (($_GET['reset'] ?? '') === '1'): ?>
+                <div class="alert ok">Contrasena restablecida correctamente. Ya puedes iniciar sesion.</div>
+            <?php endif; ?>
 
             <form method="post" action="<?= BASE_URL ?>login.php" autocomplete="on">
                 <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token'] ?? '') ?>">
@@ -70,6 +73,7 @@
                 <button type="submit">Ingresar al panel</button>
             </form>
 
+            <p class="auth-note"><a href="<?= BASE_URL ?>recuperar.php">¿Olvidaste tu contrasena?</a></p>
             <p class="auth-note">No tengo cuenta: <a href="<?= BASE_URL ?>registro.php">Registrarme</a></p>
         </section>
     </main>

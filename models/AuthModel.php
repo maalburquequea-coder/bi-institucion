@@ -287,6 +287,9 @@ class AuthModel
     public function hijosDelPadre(int $id): array               { return $this->usuario->hijosDelPadre($id); }
     public function hijosDetallePadre(int $id): array           { return $this->usuario->hijosDetallePadre($id); }
     public function solicitudesPadre(int $id): array            { return $this->usuario->solicitudesPadre($id); }
+    public function guardarTokenReset(int $id, string $t): bool    { return $this->usuario->guardarTokenReset($id, $t); }
+    public function buscarUsuarioPorTokenReset(string $t): ?array  { return $this->usuario->buscarUsuarioPorTokenReset($t); }
+    public function actualizarContrasena(int $id, string $h): bool { return $this->usuario->actualizarContrasena($id, $h); }
 
     // — NotificacionModel —
     public function crearNotificacionUsuario(int $id, string $t, string $m, string $e): void { $this->notificacion->crearNotificacionUsuario($id, $t, $m, $e); }

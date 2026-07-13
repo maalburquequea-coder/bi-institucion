@@ -333,6 +333,25 @@ class UsuarioModel
 
     // --- Privados ---
 
+    public function guardarTokenReset(int $idUsuario, string $token): bool
+    {
+        $stmt = $this->db->prepare("UPDATE usuarios SET token_verificacion = ? WHERE id_usuario = ?");
+        return $stmt->execute([$token, $idUsuario]);
+    }
+
+    public function buscarUsuarioPorTokenReset(string $token): ?array
+    {
+        $stmt = $this->db->prepare("SELECT id_usuario, correo, nombres FROM usuarios WHERE token_verificacion = ? LIMIT 1");
+        $stmt->execute([$token]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public function actualizarContrasena(int $idUsuario, string $hash): bool
+    {
+        $stmt = $this->db->prepare("UPDATE usuarios SET contrasena = ?, token_verificacion = NULL WHERE id_usuario = ?");
+        return $stmt->execute([$hash, $idUsuario]);
+    }
+
     private function solicitudPendiente(int $idPadre): ?array
     {
         $stmt = $this->db->prepare("SELECT id_solicitud, dni_estudiante FROM solicitudes_vinculacion WHERE id_padre = ? AND estado = 'pendiente' LIMIT 1");
