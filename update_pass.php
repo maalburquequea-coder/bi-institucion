@@ -8,10 +8,18 @@ $activa = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuent
 $activa->execute();
 echo "Jesus Otero activado. Filas: " . $activa->rowCount() . "\n";
 
+// Diagnóstico SMTP
+echo "SMTP_HOST: " . (SMTP_HOST ?: '(vacio)') . "\n";
+echo "SMTP_PORT: " . SMTP_PORT . "\n";
+echo "SMTP_SECURE: " . (SMTP_SECURE ?: '(vacio)') . "\n";
+echo "SMTP_USER: " . (SMTP_USER ?: '(vacio)') . "\n";
+echo "SMTP_PASS: " . (SMTP_PASS ? '***(' . strlen(SMTP_PASS) . ' chars)' : '(vacio)') . "\n";
+echo "MAIL_FROM: " . (MAIL_FROM ?: '(vacio)') . "\n";
+
 // Test SMTP
 require_once __DIR__ . '/services/EmailService.php';
 $smtp_ok = EmailService::enviar('alburquequequeayana24@gmail.com', 'Test SMTP BI Educativo', "SMTP funcionando OK desde Render.");
-echo $smtp_ok ? "SMTP OK: correo de prueba enviado a alburquequequeayana24@gmail.com\n" : "SMTP ERROR: revisa SMTP_USER en Render.\n";
+echo $smtp_ok ? "SMTP OK: correo enviado a alburquequequeayana24@gmail.com\n" : "SMTP ERROR: credenciales incorrectas o no configuradas.\n";
 
 // Actualizar contraseña del admin
 $hash = '$2y$10$ulDQTm4a33Vf2Zc5INKorO0ghaZHSmf7nG6Z44qOIIkj4ka/wGsk6';
