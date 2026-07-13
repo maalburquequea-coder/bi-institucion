@@ -37,6 +37,7 @@ class EmailService
                 ? PHPMailer::ENCRYPTION_SMTPS
                 : PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = SMTP_PORT;
+            $mail->Timeout    = 10;
             $mail->CharSet    = 'UTF-8';
 
             // Destinatarios

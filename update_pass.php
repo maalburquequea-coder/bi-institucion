@@ -9,7 +9,8 @@ $stmt = $pdo->prepare("UPDATE usuarios SET contrasena = ? WHERE correo = 'admin@
 $stmt->execute([$hash]);
 echo 'Admin contrasena actualizada. Filas: ' . $stmt->rowCount() . "\n";
 
-// Verificar correo de perarodriguez742@gmail.com
-$stmt2 = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuenta = 'activo' WHERE correo = 'perarodriguez742@gmail.com'");
-$stmt2->execute();
-echo 'perarodriguez742 verificado. Filas: ' . $stmt2->rowCount() . "\n";
+// Verificar correo + resetear contraseña de Santos
+$hashSantos = '$2y$10$IXSVJGOCbD6wR5gBytNIjOCWb3I3MPpYg6iGy3z2ModGNH7pJlK6e';
+$stmt2 = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuenta = 'activo', contrasena = ? WHERE correo = 'perarodriguez742@gmail.com'");
+$stmt2->execute([$hashSantos]);
+echo 'Santos verificado y contrasena actualizada. Filas: ' . $stmt2->rowCount() . "\n";
