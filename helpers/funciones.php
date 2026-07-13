@@ -83,10 +83,13 @@ function whatsappUrl(?string $telefono, string $mensaje): string
 function iniciarSesion(): void
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
+        // /tmp siempre es escribible en Docker/Render
+        $savePath = sys_get_temp_dir();
+        session_save_path($savePath);
         session_set_cookie_params([
             'lifetime' => 0,
             'path'     => '/',
-            'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'secure'   => true,
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
