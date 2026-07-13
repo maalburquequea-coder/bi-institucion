@@ -3,12 +3,22 @@ if (($_GET['token'] ?? '') !== 'reset14008') { http_response_code(403); exit('Ac
 require_once __DIR__ . '/config/conexion.php';
 $pdo = db();
 
-// Buscar correo específico
-$buscar = $pdo->prepare("SELECT id_usuario, nombres, apellidos, correo, correo_verificado, estado_cuenta FROM usuarios WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
+// Buscar correo específico con detalle completo
+$buscar = $pdo->prepare("
+    SELECT u.id_usuario, u.nombres, u.apellidos, u.dni, u.correo, u.telefono,
+           u.correo_verificado, u.estado_cuenta, r.nombre_rol,
+           sv.fecha_solicitud, sv.estado AS estado_vinculacion,
+           e.nombres AS nombre_estudiante, e.apellidos AS apellido_estudiante
+    FROM usuarios u
+    JOIN roles r ON r.id_rol = u.id_rol
+    LEFT JOIN solicitudes_vinculacion sv ON sv.id_padre = u.id_usuario
+    LEFT JOIN estudiantes e ON e.id_estudiante = sv.id_estudiante
+    WHERE u.correo = 'esperanzarodriguezruiz671@gmail.com'
+");
 $buscar->execute();
-$encontrado = $buscar->fetch(PDO::FETCH_ASSOC);
-if ($encontrado) {
-    echo "ENCONTRADO: " . json_encode($encontrado) . "\n";
+$rows = $buscar->fetchAll(PDO::FETCH_ASSOC);
+if ($rows) {
+    foreach ($rows as $r) { echo "DETALLE: " . json_encode($r, JSON_UNESCAPED_UNICODE) . "\n"; }
 } else {
     echo "NO REGISTRADO: esperanzarodriguezruiz671@gmail.com\n";
 }
