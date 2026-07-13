@@ -3,6 +3,16 @@ if (($_GET['token'] ?? '') !== 'reset14008') { http_response_code(403); exit('Ac
 require_once __DIR__ . '/config/conexion.php';
 $pdo = db();
 
+// Buscar correo específico
+$buscar = $pdo->prepare("SELECT id_usuario, nombres, apellidos, correo, correo_verificado, estado_cuenta FROM usuarios WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
+$buscar->execute();
+$encontrado = $buscar->fetch(PDO::FETCH_ASSOC);
+if ($encontrado) {
+    echo "ENCONTRADO: " . json_encode($encontrado) . "\n";
+} else {
+    echo "NO REGISTRADO: esperanzarodriguezruiz671@gmail.com\n";
+}
+
 // Actualizar contraseña del admin
 $hash = '$2y$10$ulDQTm4a33Vf2Zc5INKorO0ghaZHSmf7nG6Z44qOIIkj4ka/wGsk6';
 $stmt = $pdo->prepare("UPDATE usuarios SET contrasena = ? WHERE correo = 'admin@demo.com'");
