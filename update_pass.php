@@ -3,6 +3,17 @@ if (($_GET['token'] ?? '') !== 'reset14008') { http_response_code(403); exit('Ac
 require_once __DIR__ . '/config/conexion.php';
 $pdo = db();
 
+// Agregar notas bajas de EPT para Jesus Aymar AGUIRRE COBA (id=6) → alerta media
+$chkCal = $pdo->prepare("SELECT COUNT(*) FROM calificaciones WHERE id_estudiante = 6 AND id_curso = 5 AND id_docente = 9");
+$chkCal->execute();
+if ((int)$chkCal->fetchColumn() === 0) {
+    $pdo->prepare("INSERT INTO calificaciones (id_estudiante, id_curso, id_docente, nota, descripcion, fecha_registro) VALUES (6,5,9,11.00,'Unidad 1',NOW())")->execute();
+    $pdo->prepare("INSERT INTO calificaciones (id_estudiante, id_curso, id_docente, nota, descripcion, fecha_registro) VALUES (6,5,9,12.00,'Unidad 2',NOW())")->execute();
+    echo "Notas EPT de Jesus Aymar agregadas OK.\n";
+} else {
+    echo "Notas EPT de Jesus Aymar ya existen.\n";
+}
+
 // Activar cuenta de Jesus Otero (esperanzarodriguezruiz671@gmail.com)
 $activa = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuenta = 'activo' WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
 $activa->execute();
