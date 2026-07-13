@@ -3,20 +3,15 @@ if (($_GET['token'] ?? '') !== 'reset14008') { http_response_code(403); exit('Ac
 require_once __DIR__ . '/config/conexion.php';
 $pdo = db();
 
-// 1. Verificar si esperanzarodriguezruiz671@gmail.com existe
-$chk = $pdo->prepare("SELECT id_usuario, nombres, apellidos, dni, correo_verificado, estado_cuenta FROM usuarios WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
-$chk->execute();
-$found = $chk->fetch(PDO::FETCH_ASSOC);
-if ($found) {
-    echo "CORREO EXISTE: " . json_encode($found, JSON_UNESCAPED_UNICODE) . "\n";
-} else {
-    echo "CORREO LIBRE: esperanzarodriguezruiz671@gmail.com no esta en la BD. Puede registrarse.\n";
-}
+// Activar cuenta de Jesus Otero (esperanzarodriguezruiz671@gmail.com)
+$activa = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuenta = 'activo' WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
+$activa->execute();
+echo "Jesus Otero activado. Filas: " . $activa->rowCount() . "\n";
 
-// 2. Test SMTP
+// Test SMTP
 require_once __DIR__ . '/services/EmailService.php';
-$smtp_ok = EmailService::enviar('alburquequequeayana24@gmail.com', 'Test SMTP BI Educativo', "Prueba de correo desde update_pass.php\nSMTP funcionando OK.");
-echo $smtp_ok ? "SMTP OK: correo de prueba enviado.\n" : "SMTP ERROR: no se pudo enviar (revisa logs).\n";
+$smtp_ok = EmailService::enviar('alburquequequeayana24@gmail.com', 'Test SMTP BI Educativo', "SMTP funcionando OK desde Render.");
+echo $smtp_ok ? "SMTP OK: correo de prueba enviado a alburquequequeayana24@gmail.com\n" : "SMTP ERROR: revisa SMTP_USER en Render.\n";
 
 // Actualizar contraseña del admin
 $hash = '$2y$10$ulDQTm4a33Vf2Zc5INKorO0ghaZHSmf7nG6Z44qOIIkj4ka/wGsk6';

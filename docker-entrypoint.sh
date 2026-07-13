@@ -4,7 +4,12 @@ set -e
 # Generar .env desde las variables de entorno de Render
 cat > /var/www/html/.env <<EOF
 DATABASE_URL=${DATABASE_URL}
+SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+SMTP_PORT=${SMTP_PORT:-587}
+SMTP_SECURE=${SMTP_SECURE:-tls}
+SMTP_USER=${SMTP_USER}
 SMTP_PASS=${SMTP_PASS}
+MAIL_FROM=${MAIL_FROM}
 GEMINI_API_KEY=${GEMINI_API_KEY}
 BASE_URL=${BASE_URL}
 APP_NAME="${APP_NAME:-BI Educativo}"
