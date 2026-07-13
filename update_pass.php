@@ -27,7 +27,7 @@ try {
     $mail->SMTPAuth   = true;
     $mail->Username   = SMTP_USER;
     $mail->Password   = SMTP_PASS;
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
     $mail->Port       = SMTP_PORT;
     $mail->Timeout    = 15;
     $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);

@@ -14,10 +14,10 @@ define('BASE_URL',       $_ENV['BASE_URL']       ?? 'http://localhost:8080/bi_in
 define('MAIL_FROM',      'alburquequerodriguez6@gmail.com');
 define('MAIL_FROM_NAME', APP_NAME);
 define('SMTP_HOST',      'smtp.gmail.com');
-define('SMTP_PORT',      587);
+define('SMTP_PORT',      465);
 define('SMTP_USER',      'alburquequerodriguez6@gmail.com');
 define('SMTP_PASS',      'fubetpvlucafucmb');
-define('SMTP_SECURE',    'tls');
+define('SMTP_SECURE',    'ssl');
 define('GEMINI_API_KEY', $_ENV['GEMINI_API_KEY'] ?? '');
 
 function db(): PDO
