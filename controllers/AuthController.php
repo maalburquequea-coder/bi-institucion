@@ -168,7 +168,7 @@ class AuthController
                         ? 'Cuenta registrada correctamente. Revisa tu bandeja de entrada para verificar tu correo y activar el acceso.'
                         : 'Cuenta registrada. No se pudo enviar el correo de activación (revise configuración SMTP).';
                 } catch (Exception $e) {
-                    $error = 'No se pudo registrar. Verifique que el DNI o correo no existan.';
+                    $error = 'No se pudo registrar. Verifique que el DNI o correo no existan. (' . $e->getMessage() . ')';
                 }
             }
         }
