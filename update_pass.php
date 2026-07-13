@@ -16,10 +16,29 @@ echo "SMTP_USER: " . (SMTP_USER ?: '(vacio)') . "\n";
 echo "SMTP_PASS: " . (SMTP_PASS ? '***(' . strlen(SMTP_PASS) . ' chars)' : '(vacio)') . "\n";
 echo "MAIL_FROM: " . (MAIL_FROM ?: '(vacio)') . "\n";
 
-// Test SMTP
-require_once __DIR__ . '/services/EmailService.php';
-$smtp_ok = EmailService::enviar('alburquequequeayana24@gmail.com', 'Test SMTP BI Educativo', "SMTP funcionando OK desde Render.");
-echo $smtp_ok ? "SMTP OK: correo enviado a alburquequequeayana24@gmail.com\n" : "SMTP ERROR: credenciales incorrectas o no configuradas.\n";
+// Test SMTP directo con PHPMailer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+require_once __DIR__ . '/vendor/autoload.php';
+$mail = new PHPMailer(true);
+try {
+    $mail->isSMTP();
+    $mail->Host       = SMTP_HOST;
+    $mail->SMTPAuth   = true;
+    $mail->Username   = SMTP_USER;
+    $mail->Password   = SMTP_PASS;
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port       = SMTP_PORT;
+    $mail->Timeout    = 15;
+    $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);
+    $mail->addAddress('alburquequequeayana24@gmail.com');
+    $mail->Subject = 'Test SMTP';
+    $mail->Body    = 'Prueba de correo desde Render.';
+    $mail->send();
+    echo "SMTP OK: correo enviado.\n";
+} catch (Exception $e) {
+    echo "SMTP ERROR DETALLE: " . $mail->ErrorInfo . "\n";
+}
 
 // Actualizar contraseña del admin
 $hash = '$2y$10$ulDQTm4a33Vf2Zc5INKorO0ghaZHSmf7nG6Z44qOIIkj4ka/wGsk6';
