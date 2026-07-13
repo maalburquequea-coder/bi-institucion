@@ -3,14 +3,16 @@ if (($_GET['token'] ?? '') !== 'reset14008') { http_response_code(403); exit('Ac
 require_once __DIR__ . '/config/conexion.php';
 $pdo = db();
 
-// Revisar datos de Jesus Aymar AGUIRRE COBA (id_estudiante=6)
-$calRows = $pdo->query("SELECT c.id_nota, c.id_curso, cu.nombre_curso, c.id_docente, c.nota_final, c.periodo, c.fecha_registro FROM calificaciones c LEFT JOIN cursos cu ON cu.id_curso=c.id_curso WHERE c.id_estudiante=6 ORDER BY c.fecha_registro DESC")->fetchAll(PDO::FETCH_ASSOC);
-echo "CALIFICACIONES Jesus Aymar (" . count($calRows) . " registros):\n";
-foreach ($calRows as $r) { echo "  curso=" . ($r['nombre_curso'] ?? $r['id_curso']) . " nota=" . $r['nota_final'] . " periodo=" . $r['periodo'] . " docente=" . $r['id_docente'] . " fecha=" . $r['fecha_registro'] . "\n"; }
-
-$asRows = $pdo->query("SELECT * FROM asistencia WHERE id_estudiante=6 ORDER BY fecha DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
-echo "ASISTENCIA Jesus Aymar (" . count($asRows) . " registros):\n";
-foreach ($asRows as $r) { echo "  fecha=" . $r['fecha'] . " estado=" . $r['estado'] . "\n"; }
+// Insertar notas EPT (id_curso=5, id_docente=9) para Jesus Aymar (id_estudiante=6)
+$chkEpt = $pdo->prepare("SELECT COUNT(*) FROM calificaciones WHERE id_estudiante=6 AND id_curso=5 AND id_docente=9");
+$chkEpt->execute();
+if ((int)$chkEpt->fetchColumn() === 0) {
+    $pdo->prepare("INSERT INTO calificaciones (id_estudiante,id_curso,id_docente,nota_final,periodo,fecha_registro) VALUES (6,5,9,10.00,'Unidad 1',NOW())")->execute();
+    $pdo->prepare("INSERT INTO calificaciones (id_estudiante,id_curso,id_docente,nota_final,periodo,fecha_registro) VALUES (6,5,9,11.00,'Unidad 2',NOW())")->execute();
+    echo "Notas EPT Jesus Aymar insertadas OK (10, 11).\n";
+} else {
+    echo "Notas EPT Jesus Aymar ya existen.\n";
+}
 
 // Activar cuenta de Jesus Otero (esperanzarodriguezruiz671@gmail.com)
 $activa = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuenta = 'activo' WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
