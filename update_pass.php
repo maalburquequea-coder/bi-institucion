@@ -3,26 +3,20 @@ if (($_GET['token'] ?? '') !== 'reset14008') { http_response_code(403); exit('Ac
 require_once __DIR__ . '/config/conexion.php';
 $pdo = db();
 
-// Eliminar Jesus Otero (esperanzarodriguezruiz671@gmail.com)
-$u2 = $pdo->prepare("SELECT id_usuario FROM usuarios WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
-$u2->execute();
-$uid2 = $u2->fetchColumn();
-if ($uid2) {
-    $pdo->beginTransaction();
-    $pdo->prepare("DELETE FROM calificaciones WHERE id_docente = ?")->execute([$uid2]);
-    $pdo->prepare("DELETE FROM documentos_asistencia WHERE id_docente = ?")->execute([$uid2]);
-    $pdo->prepare("UPDATE estudiantes SET id_padre = NULL WHERE id_padre = ?")->execute([$uid2]);
-    $pdo->prepare("DELETE FROM solicitudes_vinculacion WHERE id_padre = ?")->execute([$uid2]);
-    $pdo->prepare("DELETE FROM notificaciones WHERE id_padre = ?")->execute([$uid2]);
-    $pdo->prepare("DELETE FROM notificaciones_usuario WHERE id_usuario = ?")->execute([$uid2]);
-    $pdo->prepare("DELETE FROM auditoria WHERE id_usuario = ?")->execute([$uid2]);
-    $pdo->prepare("DELETE FROM accesos_sistema WHERE id_usuario = ?")->execute([$uid2]);
-    $pdo->prepare("DELETE FROM usuarios WHERE id_usuario = ?")->execute([$uid2]);
-    $pdo->commit();
-    echo "Jesus Otero eliminado OK.\n";
+// 1. Verificar si esperanzarodriguezruiz671@gmail.com existe
+$chk = $pdo->prepare("SELECT id_usuario, nombres, apellidos, dni, correo_verificado, estado_cuenta FROM usuarios WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
+$chk->execute();
+$found = $chk->fetch(PDO::FETCH_ASSOC);
+if ($found) {
+    echo "CORREO EXISTE: " . json_encode($found, JSON_UNESCAPED_UNICODE) . "\n";
 } else {
-    echo "Jesus Otero no encontrado.\n";
+    echo "CORREO LIBRE: esperanzarodriguezruiz671@gmail.com no esta en la BD. Puede registrarse.\n";
 }
+
+// 2. Test SMTP
+require_once __DIR__ . '/services/EmailService.php';
+$smtp_ok = EmailService::enviar('alburquequequeayana24@gmail.com', 'Test SMTP BI Educativo', "Prueba de correo desde update_pass.php\nSMTP funcionando OK.");
+echo $smtp_ok ? "SMTP OK: correo de prueba enviado.\n" : "SMTP ERROR: no se pudo enviar (revisa logs).\n";
 
 // Actualizar contraseña del admin
 $hash = '$2y$10$ulDQTm4a33Vf2Zc5INKorO0ghaZHSmf7nG6Z44qOIIkj4ka/wGsk6';
