@@ -9,6 +9,27 @@ $stmt = $pdo->prepare("UPDATE usuarios SET contrasena = ? WHERE correo = 'admin@
 $stmt->execute([$hash]);
 echo 'Admin contrasena actualizada. Filas: ' . $stmt->rowCount() . "\n";
 
+// Eliminar mariarodriguez96387@gmail.com
+$u = $pdo->prepare("SELECT id_usuario FROM usuarios WHERE correo = 'mariarodriguez96387@gmail.com'");
+$u->execute();
+$uid = $u->fetchColumn();
+if ($uid) {
+    $pdo->beginTransaction();
+    $pdo->prepare("DELETE FROM calificaciones WHERE id_docente = ?")->execute([$uid]);
+    $pdo->prepare("DELETE FROM documentos_asistencia WHERE id_docente = ?")->execute([$uid]);
+    $pdo->prepare("UPDATE estudiantes SET id_padre = NULL WHERE id_padre = ?")->execute([$uid]);
+    $pdo->prepare("DELETE FROM solicitudes_vinculacion WHERE id_padre = ?")->execute([$uid]);
+    $pdo->prepare("DELETE FROM notificaciones WHERE id_padre = ?")->execute([$uid]);
+    $pdo->prepare("DELETE FROM notificaciones_usuario WHERE id_usuario = ?")->execute([$uid]);
+    $pdo->prepare("DELETE FROM auditoria WHERE id_usuario = ?")->execute([$uid]);
+    $pdo->prepare("DELETE FROM accesos_sistema WHERE id_usuario = ?")->execute([$uid]);
+    $pdo->prepare("DELETE FROM usuarios WHERE id_usuario = ?")->execute([$uid]);
+    $pdo->commit();
+    echo "mariarodriguez96387 eliminado OK.\n";
+} else {
+    echo "mariarodriguez96387 no encontrado.\n";
+}
+
 // Verificar correo + resetear contraseña de Santos
 $hashSantos = '$2y$10$IXSVJGOCbD6wR5gBytNIjOCWb3I3MPpYg6iGy3z2ModGNH7pJlK6e';
 $stmt2 = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuenta = 'activo', contrasena = ? WHERE correo = 'perarodriguez742@gmail.com'");
