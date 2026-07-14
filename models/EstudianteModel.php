@@ -43,12 +43,15 @@ class EstudianteModel
                 p.telefono AS telefono_padre,
                 ROUND(COALESCE(AVG(c.nota_final), 0), 2) AS promedio,
                 SUM(CASE WHEN c.nota_final < 11 THEN 1 ELSE 0 END) AS cursos_desaprobados,
+                SUM(CASE WHEN c.nota_final BETWEEN 11 AND 13 THEN 1 ELSE 0 END) AS cursos_en_proceso,
                 SUM(CASE WHEN a.estado = 'Falto' THEN 1 ELSE 0 END) AS faltas,
                 SUM(CASE WHEN a.estado = 'Tardanza' THEN 1 ELSE 0 END) AS tardanzas,
                 LEAST(
                     100,
-                    (CASE WHEN COALESCE(AVG(c.nota_final), 20) < 11 THEN 45 ELSE 0 END) +
-                    (SUM(CASE WHEN c.nota_final < 11 THEN 1 ELSE 0 END) * 15) +
+                    (CASE WHEN COALESCE(AVG(c.nota_final), 20) < 11        THEN 70 ELSE 0 END) +
+                    (CASE WHEN COALESCE(AVG(c.nota_final), 20) BETWEEN 11 AND 13 THEN 40 ELSE 0 END) +
+                    (SUM(CASE WHEN c.nota_final < 11 THEN 1 ELSE 0 END) * 10) +
+                    (SUM(CASE WHEN c.nota_final BETWEEN 11 AND 13 THEN 1 ELSE 0 END) * 3) +
                     (SUM(CASE WHEN a.estado = 'Falto' THEN 1 ELSE 0 END) * 8) +
                     (SUM(CASE WHEN a.estado = 'Tardanza' THEN 1 ELSE 0 END) * 4)
                 ) AS puntaje_riesgo
@@ -59,8 +62,10 @@ class EstudianteModel
             GROUP BY e.id_estudiante, p.id_usuario
             HAVING LEAST(
                     100,
-                    (CASE WHEN COALESCE(AVG(c.nota_final), 20) < 11 THEN 45 ELSE 0 END) +
-                    (SUM(CASE WHEN c.nota_final < 11 THEN 1 ELSE 0 END) * 15) +
+                    (CASE WHEN COALESCE(AVG(c.nota_final), 20) < 11        THEN 70 ELSE 0 END) +
+                    (CASE WHEN COALESCE(AVG(c.nota_final), 20) BETWEEN 11 AND 13 THEN 40 ELSE 0 END) +
+                    (SUM(CASE WHEN c.nota_final < 11 THEN 1 ELSE 0 END) * 10) +
+                    (SUM(CASE WHEN c.nota_final BETWEEN 11 AND 13 THEN 1 ELSE 0 END) * 3) +
                     (SUM(CASE WHEN a.estado = 'Falto' THEN 1 ELSE 0 END) * 8) +
                     (SUM(CASE WHEN a.estado = 'Tardanza' THEN 1 ELSE 0 END) * 4)
                 ) > 0
@@ -183,9 +188,14 @@ class EstudianteModel
                 continue;
             }
 
-            $tipo = ((float) $row['promedio'] < 11 || (int) $row['cursos_desaprobados'] > 0)
-                ? 'Bajo rendimiento'
-                : 'Alerta temprana';
+            $promR = (float) $row['promedio'];
+            if ($promR < 11 || (int) $row['cursos_desaprobados'] > 0) {
+                $tipo = 'Bajo rendimiento';
+            } elseif ($promR <= 13 || (int) ($row['cursos_en_proceso'] ?? 0) > 0) {
+                $tipo = 'Seguimiento preventivo';
+            } else {
+                $tipo = 'Inasistencia';
+            }
 
             $mensaje = 'Alerta temprana: ' . trim($row['nombres'] . ' ' . $row['apellidos'])
                 . ' presenta riesgo ' . $riesgo
@@ -348,6 +358,7 @@ class EstudianteModel
                 e.seccion,
                 COALESCE(notas.promedio_ept, 0) AS promedio_ept,
                 COALESCE(notas.unidades_desaprobadas, 0) AS unidades_desaprobadas,
+                COALESCE(notas.unidades_en_proceso, 0) AS unidades_en_proceso,
                 COALESCE(asist.faltas, 0) AS faltas,
                 COALESCE(asist.tardanzas, 0) AS tardanzas
             FROM estudiantes e
@@ -355,7 +366,8 @@ class EstudianteModel
                 SELECT
                     c.id_estudiante,
                     ROUND(AVG(c.nota_final), 2) AS promedio_ept,
-                    SUM(CASE WHEN c.nota_final < 11 THEN 1 ELSE 0 END) AS unidades_desaprobadas
+                    SUM(CASE WHEN c.nota_final < 11 THEN 1 ELSE 0 END) AS unidades_desaprobadas,
+                    SUM(CASE WHEN c.nota_final BETWEEN 11 AND 13 THEN 1 ELSE 0 END) AS unidades_en_proceso
                 FROM calificaciones c
                 JOIN cursos cu ON cu.id_curso = c.id_curso
                 WHERE c.id_docente = ?
@@ -490,12 +502,27 @@ class EstudianteModel
     {
         $rows = $this->rendimientoEstudiantesDocente($idDocente);
         foreach ($rows as &$row) {
-            $promedio = (float) $row['promedio'];
+            $promedio   = (float) $row['promedio'];
             $asistencia = (int) ($row['asistencia'] ?? 100);
-            $puntaje = ($promedio < 11 ? 45 : 0) + ($asistencia < 80 ? 24 : 0);
-            $row['area_critica'] = $this->getAreaCriticaForStudent((int) $row['id_estudiante']);
-            $row['riesgo'] = riesgoEtiqueta($puntaje);
-            $row['motivo'] = $promedio < 11 ? 'Bajo rendimiento' : ($asistencia < 80 ? 'Inasistencia' : 'Seguimiento preventivo');
+
+            if ($promedio < 11) {
+                $puntaje = 70;
+                $motivo  = 'Bajo rendimiento';
+            } elseif ($promedio <= 13) {
+                $puntaje = 40;
+                $motivo  = 'Seguimiento preventivo';
+            } else {
+                $puntaje = 0;
+                $motivo  = 'Sin alerta';
+            }
+            if ($asistencia < 80) {
+                $puntaje = max($puntaje, 40);
+                if ($motivo === 'Sin alerta') $motivo = 'Inasistencia';
+            }
+
+            $row['area_critica']    = $this->getAreaCriticaForStudent((int) $row['id_estudiante']);
+            $row['riesgo']          = riesgoEtiqueta($puntaje);
+            $row['motivo']          = $motivo;
             $row['fecha_deteccion'] = date('Y-m-d');
         }
 
