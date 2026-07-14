@@ -378,6 +378,7 @@ $cursoActual = (string) ($primerCurso['nombre_curso'] ?? 'Curso asignado');
                         <label>Área Curricular (Fijo)
                             <input type="text" value="<?= e($cursoActual) ?>" readonly style="background: #f1f5f9; color: #64748b; cursor: not-allowed;">
                             <input type="hidden" name="curso" value="<?= e($cursoActual) ?>">
+                            <input type="hidden" name="id_curso" value="<?= (int)($primerCurso['id_curso'] ?? 0) ?>">
                         </label>
                         <label>Grado
                             <select name="grado">

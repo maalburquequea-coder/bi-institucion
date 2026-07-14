@@ -251,6 +251,14 @@ class DocenteController
                             'titulo'     => ($seccionActiva === 'asistencia' ? 'Asistencia' : 'Notas') . ' ' . ($_POST['curso'] ?? 'Curso'),
                             'archivo'    => $nombreArchivo,
                         ]);
+
+                        $idCurso = (int) ($_POST['id_curso'] ?? 0);
+                        if ($seccionActiva === 'notas' && $idCurso > 0) {
+                            $this->procesarNotasExcel($rutaDestino, $ext, (int) $usuario['id_usuario'], $idCurso, db());
+                        } elseif ($seccionActiva === 'asistencia') {
+                            $this->procesarAsistenciaExcel($rutaDestino, $ext, db());
+                        }
+
                         redirigir('docente.php?seccion=' . $seccionActiva . '&mensaje=Archivo de ' . $seccionActiva . ' cargado correctamente.');
                     }
                 }
@@ -379,5 +387,252 @@ class DocenteController
         if ($token === '' || $tokenSesion === '' || !hash_equals($tokenSesion, $token)) {
             die('Error de seguridad: Token CSRF invalido o ausente.');
         }
+    }
+
+    private function procesarNotasExcel(string $ruta, string $ext, int $idDocente, int $idCurso, PDO $pdo): void
+    {
+        $filas = $this->parsearExcelInterno($ruta, $ext);
+        if (empty($filas)) return;
+
+        $filaEnc = null;
+        $colDni  = 1;
+        $colNotas = [];
+
+        foreach ($filas as $idx => $fila) {
+            foreach ($fila as $ci => $celda) {
+                $upper = strtoupper((string)$celda);
+                if (str_contains($upper, 'D.N.I') || str_contains($upper, 'DNI') || str_contains($upper, 'CODIGO')) {
+                    $filaEnc = $idx;
+                    $colDni  = $ci;
+                    for ($c = $ci + 1; $c < count($fila); $c++) {
+                        $h = strtoupper(trim((string)($fila[$c] ?? '')));
+                        if (str_contains($h, 'NOTA') || (str_contains($h, 'LOGRO') && !str_contains($h, 'PROMEDIO'))) {
+                            $colNotas[] = $c;
+                        }
+                    }
+                    break 2;
+                }
+            }
+        }
+
+        if ($filaEnc === null || empty($colNotas)) return;
+
+        $periodos = ['Unidad 1', 'Unidad 2', 'Unidad 3', 'Unidad 4'];
+        for ($i = $filaEnc + 1; $i < count($filas); $i++) {
+            $fila = $filas[$i];
+            $dni  = trim((string)($fila[$colDni] ?? ''));
+            if ($dni === '' || !is_numeric($dni)) continue;
+
+            $stmtE = $pdo->prepare("SELECT id_estudiante FROM estudiantes WHERE dni = ? LIMIT 1");
+            $stmtE->execute([$dni]);
+            $idEst = (int)$stmtE->fetchColumn();
+            if ($idEst === 0) continue;
+
+            foreach ($colNotas as $n => $colNota) {
+                $nota = $this->letraANota(trim((string)($fila[$colNota] ?? '')));
+                if ($nota === null) continue;
+                $periodo = $periodos[$n] ?? ('Unidad ' . ($n + 1));
+
+                $chk = $pdo->prepare("SELECT COUNT(*) FROM calificaciones WHERE id_estudiante=? AND id_curso=? AND id_docente=? AND periodo=?");
+                $chk->execute([$idEst, $idCurso, $idDocente, $periodo]);
+                if ((int)$chk->fetchColumn() > 0) {
+                    $pdo->prepare("UPDATE calificaciones SET nota_final=?, fecha_registro=NOW() WHERE id_estudiante=? AND id_curso=? AND id_docente=? AND periodo=?")
+                        ->execute([$nota, $idEst, $idCurso, $idDocente, $periodo]);
+                } else {
+                    $pdo->prepare("INSERT INTO calificaciones (id_estudiante,id_curso,id_docente,nota_final,periodo,fecha_registro) VALUES (?,?,?,?,?,NOW())")
+                        ->execute([$idEst, $idCurso, $idDocente, $nota, $periodo]);
+                }
+            }
+        }
+    }
+
+    private function procesarAsistenciaExcel(string $ruta, string $ext, PDO $pdo): void
+    {
+        $filas = $this->parsearExcelInterno($ruta, $ext);
+        if (empty($filas)) return;
+
+        $filaEnc  = null;
+        $colDni   = 1;
+        $colFechas = [];
+
+        foreach ($filas as $idx => $fila) {
+            foreach ($fila as $ci => $celda) {
+                $upper = strtoupper((string)$celda);
+                if (str_contains($upper, 'D.N.I') || str_contains($upper, 'DNI') || str_contains($upper, 'CODIGO')) {
+                    $filaEnc = $idx;
+                    $colDni  = $ci;
+                    for ($c = $ci + 2; $c < count($fila); $c++) {
+                        $fecha = $this->parsearFechaExcel(trim((string)($fila[$c] ?? '')));
+                        if ($fecha !== null) {
+                            $colFechas[$c] = $fecha;
+                        }
+                    }
+                    break 2;
+                }
+            }
+        }
+
+        if ($filaEnc === null || empty($colFechas)) return;
+
+        for ($i = $filaEnc + 1; $i < count($filas); $i++) {
+            $fila = $filas[$i];
+            $dni  = trim((string)($fila[$colDni] ?? ''));
+            if ($dni === '' || !is_numeric($dni)) continue;
+
+            $stmtE = $pdo->prepare("SELECT id_estudiante FROM estudiantes WHERE dni = ? LIMIT 1");
+            $stmtE->execute([$dni]);
+            $idEst = (int)$stmtE->fetchColumn();
+            if ($idEst === 0) continue;
+
+            foreach ($colFechas as $col => $fecha) {
+                $raw    = strtoupper(trim((string)($fila[$col] ?? '')));
+                $estado = match($raw) {
+                    'F' => 'Falto',
+                    'A' => 'Presente',
+                    'T' => 'Tardanza',
+                    default => null,
+                };
+                if ($estado === null) continue;
+
+                $chk = $pdo->prepare("SELECT COUNT(*) FROM asistencia WHERE id_estudiante=? AND fecha=?");
+                $chk->execute([$idEst, $fecha]);
+                if ((int)$chk->fetchColumn() === 0) {
+                    $pdo->prepare("INSERT INTO asistencia (id_estudiante,fecha,estado) VALUES (?,?,?)")
+                        ->execute([$idEst, $fecha, $estado]);
+                } else {
+                    $pdo->prepare("UPDATE asistencia SET estado=? WHERE id_estudiante=? AND fecha=?")
+                        ->execute([$estado, $idEst, $fecha]);
+                }
+            }
+        }
+    }
+
+    private function letraANota(string $letra): ?float
+    {
+        return match(strtoupper($letra)) {
+            'AD' => 18.0,
+            'A'  => 15.0,
+            'B'  => 12.0,
+            'C'  =>  9.0,
+            default => null,
+        };
+    }
+
+    private function parsearFechaExcel(string $valor): ?string
+    {
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $valor, $m)) {
+            return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$m[2], (int)$m[1]);
+        }
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/', $valor, $m)) {
+            return sprintf('%04d-%02d-%02d', 2000 + (int)$m[3], (int)$m[2], (int)$m[1]);
+        }
+        if (is_numeric($valor) && (int)$valor > 40000 && (int)$valor < 55000) {
+            return date('Y-m-d', (int)(((float)$valor - 25569) * 86400));
+        }
+        return null;
+    }
+
+    private function sinNamespacesExcel(string $xml): string
+    {
+        $xml = (string)preg_replace('/\s+xmlns(?::\w+)?="[^"]*"/', '', $xml);
+        return (string)preg_replace('/<(\/?)\w+:/', '<$1', $xml);
+    }
+
+    private function parsearExcelInterno(string $ruta, string $ext): array
+    {
+        if ($ext === 'csv') {
+            $filas  = [];
+            $handle = fopen($ruta, 'r');
+            if (!$handle) return [];
+            $primera = (string)fgets($handle);
+            rewind($handle);
+            $sep = substr_count($primera, ';') > substr_count($primera, ',') ? ';' : ',';
+            while (($datos = fgetcsv($handle, 4000, $sep)) !== false) {
+                $filas[] = array_map('strval', $datos);
+            }
+            fclose($handle);
+            return $filas;
+        }
+
+        if (!in_array($ext, ['xlsx', 'xls'], true) || !class_exists('ZipArchive')) return [];
+
+        $zip = new ZipArchive();
+        if ($zip->open($ruta) !== true) return [];
+
+        $cadenas = [];
+        $ssXml   = $zip->getFromName('xl/sharedStrings.xml');
+        if ($ssXml !== false) {
+            $ss = @simplexml_load_string($this->sinNamespacesExcel($ssXml));
+            if ($ss) {
+                foreach ($ss->si as $si) {
+                    $cadenas[] = isset($si->t) ? (string)$si->t : implode('', array_map(fn($r) => (string)($r->t ?? ''), iterator_to_array($si->r ?? new SimpleXMLElement('<r/>'), false)));
+                }
+            }
+        }
+
+        $sheetPath = 'xl/worksheets/sheet1.xml';
+        $relXml    = $zip->getFromName('xl/_rels/workbook.xml.rels');
+        if ($relXml !== false) {
+            $rels = @simplexml_load_string($this->sinNamespacesExcel($relXml));
+            if ($rels) {
+                foreach ($rels->Relationship as $rel) {
+                    if (str_contains((string)$rel['Type'], 'worksheet')) {
+                        $t = (string)$rel['Target'];
+                        $sheetPath = str_starts_with($t, '/') ? ltrim($t, '/') : 'xl/' . $t;
+                        break;
+                    }
+                }
+            }
+        }
+
+        $hojaXml = $zip->getFromName($sheetPath);
+        if ($hojaXml === false) {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $n = $zip->getNameIndex($i);
+                if ($n !== false && str_contains($n, 'worksheets/') && str_ends_with($n, '.xml')) {
+                    $hojaXml = $zip->getFromIndex($i);
+                    if ($hojaXml !== false) break;
+                }
+            }
+        }
+        $zip->close();
+        if ($hojaXml === false) return [];
+
+        $hoja = @simplexml_load_string($this->sinNamespacesExcel($hojaXml));
+        if (!$hoja || !isset($hoja->sheetData)) return [];
+
+        $rawFilas = [];
+        $maxCol   = 0;
+        foreach ($hoja->sheetData->row as $fila) {
+            $idxFila = (int)$fila['r'] - 1;
+            $celdas  = [];
+            foreach ($fila->c as $celda) {
+                preg_match('/^([A-Z]+)\d+$/i', (string)$celda['r'], $m);
+                if (!$m) continue;
+                $colStr = strtoupper($m[1]);
+                $colIdx = 0;
+                for ($j = 0; $j < strlen($colStr); $j++) {
+                    $colIdx = $colIdx * 26 + (ord($colStr[$j]) - 64);
+                }
+                $colIdx--;
+                $maxCol = max($maxCol, $colIdx);
+                $tipo   = (string)($celda['t'] ?? '');
+                $val    = isset($celda->v) ? (string)$celda->v : '';
+                if ($tipo === 's') $val = $cadenas[(int)$val] ?? $val;
+                elseif ($tipo === 'inlineStr') $val = (string)($celda->is->t ?? '');
+                $celdas[$colIdx] = $val;
+            }
+            if (!empty($celdas)) $rawFilas[$idxFila] = $celdas;
+        }
+
+        if (empty($rawFilas)) return [];
+        ksort($rawFilas);
+        $resultado = [];
+        foreach ($rawFilas as $celdas) {
+            $fila = [];
+            for ($c = 0; $c <= $maxCol; $c++) $fila[] = $celdas[$c] ?? '';
+            $resultado[] = $fila;
+        }
+        return $resultado;
     }
 }
