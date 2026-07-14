@@ -5,7 +5,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 class AIService
 {
-    private const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    private const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
     public static function generarPlanMejora(array $datosEstudiante): array
     {
