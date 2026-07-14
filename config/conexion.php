@@ -11,12 +11,12 @@ if (file_exists($dotenvPath . '/.env')) {
 
 define('APP_NAME',       'BI Educativo Piura 2026');
 define('BASE_URL',       $_ENV['BASE_URL']       ?? 'http://localhost:8080/bi_institucion/');
-define('MAIL_FROM',      'alburquequerodriguez6@gmail.com');
+define('MAIL_FROM',      $_ENV['MAIL_FROM']   ?? 'alburquequerodriguez6@gmail.com');
 define('MAIL_FROM_NAME', APP_NAME);
 define('SMTP_HOST',      'smtp.gmail.com');
 define('SMTP_PORT',      465);
-define('SMTP_USER',      'alburquequerodriguez6@gmail.com');
-define('SMTP_PASS',      'fubetpvlucafucmb');
+define('SMTP_USER',      $_ENV['SMTP_USER']   ?? 'alburquequerodriguez6@gmail.com');
+define('SMTP_PASS',      $_ENV['SMTP_PASS']   ?? '');
 define('SMTP_SECURE',    'ssl');
 define('GEMINI_API_KEY', $_ENV['GEMINI_API_KEY'] ?? '');
 
