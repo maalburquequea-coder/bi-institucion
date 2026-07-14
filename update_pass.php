@@ -3,16 +3,29 @@ if (($_GET['token'] ?? '') !== 'reset14008') { http_response_code(403); exit('Ac
 require_once __DIR__ . '/config/conexion.php';
 $pdo = db();
 
-// Estado actual de Jesus Aymar en EPT
-$cal = $pdo->query("SELECT c.nota_final, c.periodo, cu.nombre_curso, c.id_docente FROM calificaciones c JOIN cursos cu ON cu.id_curso=c.id_curso WHERE c.id_estudiante=6 AND c.id_curso=5")->fetchAll(PDO::FETCH_ASSOC);
-echo "NOTAS EPT Jesus Aymar (" . count($cal) . " registros):\n";
-foreach ($cal as $r) { echo "  " . $r['nombre_curso'] . " | nota=" . $r['nota_final'] . " | periodo=" . $r['periodo'] . " | docente=" . $r['id_docente'] . "\n"; }
-$promedio = count($cal) ? array_sum(array_column($cal,'nota_final')) / count($cal) : 0;
-echo "  Promedio EPT: " . round($promedio,2) . "\n";
+// Insertar notas EPT Jesus Aymar (id_estudiante=6, id_curso=5, id_docente=9)
+$chkEpt = $pdo->prepare("SELECT COUNT(*) FROM calificaciones WHERE id_estudiante=6 AND id_curso=5 AND id_docente=9");
+$chkEpt->execute();
+if ((int)$chkEpt->fetchColumn() === 0) {
+    $pdo->prepare("INSERT INTO calificaciones (id_estudiante,id_curso,id_docente,nota_final,periodo,fecha_registro) VALUES (6,5,9,11.00,'Unidad 1',NOW())")->execute();
+    $pdo->prepare("INSERT INTO calificaciones (id_estudiante,id_curso,id_docente,nota_final,periodo,fecha_registro) VALUES (6,5,9,12.00,'Unidad 2',NOW())")->execute();
+    echo "Notas EPT insertadas OK: Unidad1=11, Unidad2=12 → promedio=11.5 (alerta Media).\n";
+} else {
+    $cal = $pdo->query("SELECT nota_final, periodo FROM calificaciones WHERE id_estudiante=6 AND id_curso=5 AND id_docente=9")->fetchAll(PDO::FETCH_ASSOC);
+    $prom = array_sum(array_column($cal,'nota_final')) / count($cal);
+    echo "Notas EPT ya existen. Promedio actual: " . round($prom,2) . "\n";
+    foreach ($cal as $r) { echo "  " . $r['periodo'] . " = " . $r['nota_final'] . "\n"; }
+}
 
-$asis = $pdo->query("SELECT fecha, estado FROM asistencia WHERE id_estudiante=6 ORDER BY fecha DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
-echo "ASISTENCIA Jesus Aymar (" . count($asis) . " registros):\n";
-foreach ($asis as $r) { echo "  " . $r['fecha'] . " - " . $r['estado'] . "\n"; }
+// Insertar falta de asistencia EPT para Jesus Aymar
+$chkAs = $pdo->prepare("SELECT COUNT(*) FROM asistencia WHERE id_estudiante=6 AND fecha='2026-05-25'");
+$chkAs->execute();
+if ((int)$chkAs->fetchColumn() === 0) {
+    $pdo->prepare("INSERT INTO asistencia (id_estudiante,fecha,estado) VALUES (6,'2026-05-25','Falto')")->execute();
+    echo "Asistencia EPT insertada: 2026-05-25 Falto.\n";
+} else {
+    echo "Asistencia 2026-05-25 ya existe.\n";
+}
 
 // Activar cuenta de Jesus Otero (esperanzarodriguezruiz671@gmail.com)
 $activa = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuenta = 'activo' WHERE correo = 'esperanzarodriguezruiz671@gmail.com'");
