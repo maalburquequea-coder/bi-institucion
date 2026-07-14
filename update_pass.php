@@ -96,3 +96,39 @@ $hashSantos = '$2y$10$IXSVJGOCbD6wR5gBytNIjOCWb3I3MPpYg6iGy3z2ModGNH7pJlK6e';
 $stmt2 = $pdo->prepare("UPDATE usuarios SET correo_verificado = 1, estado_cuenta = 'activo', contrasena = ? WHERE correo = 'perarodriguez742@gmail.com'");
 $stmt2->execute([$hashSantos]);
 echo 'Santos verificado y contrasena actualizada. Filas: ' . $stmt2->rowCount() . "\n";
+
+// === TEST IA GEMINI ===
+echo "\n--- DIAGNÓSTICO IA GEMINI ---\n";
+$apiKey = GEMINI_API_KEY;
+echo "GEMINI_API_KEY: " . ($apiKey ? '***(' . strlen($apiKey) . ' chars)' : '(VACÍO - IA no funcionará)') . "\n";
+echo "curl disponible: " . (function_exists('curl_init') ? 'SI' : 'NO') . "\n";
+
+if ($apiKey) {
+    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $apiKey);
+    $payload = json_encode(['contents' => [['parts' => [['text' => 'Di solo: OK']]]]]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    $result   = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr  = curl_error($ch);
+    curl_close($ch);
+
+    echo "HTTP: $httpCode\n";
+    if ($curlErr) echo "cURL error: $curlErr\n";
+    if ($httpCode === 200) {
+        $r = json_decode($result, true);
+        $texto = $r['candidates'][0]['content']['parts'][0]['text'] ?? '(sin texto)';
+        echo "IA respuesta: " . trim($texto) . "\n";
+        echo "RESULTADO: IA FUNCIONANDO OK\n";
+    } else {
+        $err = json_decode($result, true);
+        echo "Error API: " . ($err['error']['message'] ?? $result) . "\n";
+        echo "RESULTADO: IA NO FUNCIONA\n";
+    }
+} else {
+    echo "RESULTADO: Configura GEMINI_API_KEY en las variables de entorno de Render.\n";
+}
